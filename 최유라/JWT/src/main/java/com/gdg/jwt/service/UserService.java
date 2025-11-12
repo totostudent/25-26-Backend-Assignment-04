@@ -6,6 +6,8 @@ import com.gdg.jwt.dto.jwt.TokenResponse;
 import com.gdg.jwt.dto.user.UserInfoResponse;
 import com.gdg.jwt.dto.user.UserSignUpRequest;
 import com.gdg.jwt.dto.user.UserUpdateRequest;
+import com.gdg.jwt.exception.CustomException;
+import com.gdg.jwt.exception.ErrorCode;
 import com.gdg.jwt.jwt.TokenProvider;
 import com.gdg.jwt.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -69,6 +71,6 @@ public class UserService {
 
     public User getUserEntity(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("유저가 존재하지 않습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.USER_NOT_FOUND));
     }
 }

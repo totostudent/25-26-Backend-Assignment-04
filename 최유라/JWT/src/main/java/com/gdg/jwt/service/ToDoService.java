@@ -4,6 +4,8 @@ import com.gdg.jwt.domain.ToDo;
 import com.gdg.jwt.dto.todo.ToDoCreateRequest;
 import com.gdg.jwt.dto.todo.ToDoInfoResponse;
 import com.gdg.jwt.dto.todo.ToDoUpdateRequest;
+import com.gdg.jwt.exception.CustomException;
+import com.gdg.jwt.exception.ErrorCode;
 import com.gdg.jwt.repository.ToDoRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -58,7 +60,7 @@ public class ToDoService {
 
     private ToDo getWork(Long workId) {
         return toDoRepository.findById(workId)
-                .orElseThrow(() -> new RuntimeException("요청하신 내용의 일정을 찾을 수 없습니다."));
+                .orElseThrow(() -> new CustomException(ErrorCode.WORK_NOT_FOUND));
     }
 
     @Transactional(readOnly = true)
@@ -72,7 +74,7 @@ public class ToDoService {
 
     private void validateAuthor(Principal principal, ToDo todo) {
         if (!todo.getUser().getId().equals(Long.parseLong(principal.getName()))) {
-            throw new RuntimeException("해당 데이터에 접근할 권한이 없습니다.");
+            throw new CustomException(ErrorCode.HAVE_NO_ROLE);
         }
     }
 }

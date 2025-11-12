@@ -17,4 +17,9 @@ public class GlobalExceptionHandler { //런타임 예외(값을 원하는 형식
 
         return ResponseEntity.badRequest().body(response);
     }
+
+    @ExceptionHandler(CustomException.class)
+    protected ResponseEntity<ErrorResponse> handleCustomException(CustomException e) {
+        return ErrorResponse.toResponseEntity(e.getErrorCode());
+    }
 }

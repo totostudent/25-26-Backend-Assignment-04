@@ -1,6 +1,8 @@
 package com.gdg.jwt.jwt;
 
 import com.gdg.jwt.domain.User;
+import com.gdg.jwt.exception.CustomException;
+import com.gdg.jwt.exception.ErrorCode;
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
@@ -31,11 +33,11 @@ public class TokenProvider {
     private static final String AUTHORIZATION = "Authorization";
 
     private final SecretKey key;
-    private final long accessTokenValidityTime;
+    private final long accessTokenValidityTime; //토큰 만료 시간
 
     public TokenProvider(@Value("${jwt.secret}") String secretKey,
                          @Value("${jwt.access-token-validity-in-milliseconds}") long accessTokenValidityTime) {
-        byte[] keyBytes = Decoders.BASE64.decode(secretKey);
+        byte[] keyBytes = Decoders.BASE64.decode(secretKey); //64진수로 인코딩된 secretKey를 디코딩해 원래 바이트 배열 키로 변환
         this.key = Keys.hmacShaKeyFor(keyBytes); // 내부적으로 HS256 알고리즘 포함
         this.accessTokenValidityTime = accessTokenValidityTime;
     }
@@ -55,8 +57,8 @@ public class TokenProvider {
     public Authentication getAuthentication(String accessToken) {
         Claims claims = parseClaims(accessToken);
 
-        if (claims.get(ROLE_CLAIM) == null) {
-            throw new RuntimeException("권한 정보가 없는 토큰입니다.");
+        if (claims.get(ROLE_CLAIM) == null) { //토큰의 claims 맵 내에 있는 권한 정보가 없을 때
+            throw new CustomException(ErrorCode.NO_ROLE_TOKEN);
         }
 
         // 사용자의 권한 정보를 securityContextHolder에 담아준다
@@ -74,10 +76,10 @@ public class TokenProvider {
     public String resolveToken(HttpServletRequest request) { // 토큰 분해/분석
         String bearerToken = request.getHeader(AUTHORIZATION);
 
-        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER)) {
-            return bearerToken.substring(BEARER.length()); // "Bearer " 접두사 제거하여 순수 토큰만 반환
+        if (StringUtils.hasText(bearerToken) && bearerToken.startsWith(BEARER)) { //null, 길이가 0, 공백이 아니고 'BEARER'로 시작하는 토큰일 때
+            return bearerToken.substring(BEARER.length()); // "Bearer " 접두사 제거하여 순수 토큰만 반환(bearerToken에서 bearer 문자열 길이만큼 앞에서부터 지워나감)
         }
-        return null;
+        return null; //위 조건 만족 못하는 경우
     }
 
     public boolean validateToken(String token) {
@@ -100,10 +102,10 @@ public class TokenProvider {
                     .build()
                     .parseSignedClaims(token)
                     .getPayload();
-        } catch (ExpiredJwtException e) {
-            return e.getClaims();
-        } catch (SecurityException e) {
-            throw new RuntimeException("토큰 복호화에 실패했습니다.");
+        } catch (ExpiredJwtException e) { //유효 기간 지난 JWT토큰 수신받았을 때
+            return e.getClaims(); //예외 발생한 객체의 클레임(사용자 정보) 반환
+        } catch (SecurityException e) { //토큰 변조됨, 복호화를 시도한 키가 올바르지 않음
+            throw new CustomException(ErrorCode.CAN_NOT_USE_TOKEN);
         }
     }
 }
